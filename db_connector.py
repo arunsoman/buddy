@@ -59,6 +59,27 @@ def insert_requirement(conn, requirement):
         conn.commit()
     except sqlite3.Error as e:
         print(e)
+# db_connector.py (updated)
+
+# ...
+
+def retrieve_ambiguous_requirements(conn):
+    """
+    Retrieves ambiguous requirements from the database.
+
+    Args:
+        conn (sqlite3.Connection): The connection object to the database.
+
+    Returns:
+        list: A list of ambiguous requirements.
+    """
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT requirement_text FROM requirements WHERE similarity > 0.5")  # Assume similarity > 0.5 indicates ambiguity
+        ambiguous_requirements = [row[0] for row in cur.fetchall()]
+        return ambiguous_requirements
+    except sqlite3.Error as e:
+        print(e)
 
 # Example usage
 if __name__ == "__main__":
