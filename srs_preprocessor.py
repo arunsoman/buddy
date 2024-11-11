@@ -7,6 +7,77 @@ from nltk.stem import WordNetLemmatizer
 import spacy
 import PyPDF2
 import re
+# srs_preprocessor.py (updated)
+
+import nltk
+from nltk.tokenize import sent_tokenize, word_tokenize
+from nltk.corpus import stopwords
+import re
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.pipeline import make_pipeline
+
+def preprocess_srs_text(text):
+    # Text Preprocessing: Concatenate multi-line requirements and remove line breaks
+    text = text.replace("\n", " ").replace("\r", " ")
+
+    # Tokenize the text into sentences
+    sentences = sent_tokenize(text)
+
+    # Heuristics-based Requirement Boundary Detection
+    detected_requirements = detect_requirements_heuristics(sentences)
+
+    # ML-based Requirement Boundary Detection (Naive Bayes Classifier)
+    ml_detected_requirements = detect_requirements_ml(sentences)
+
+    return detected_requirements, ml_detected_requirements
+
+def detect_requirements_heuristics(sentences):
+    # Heuristics-based Approach: Keyword-based and Punctuation-based
+    detected_requirements = []
+    for sentence in sentences:
+        if any(keyword in sentence.lower() for keyword in ["requirement", "shall", "should"]):
+            detected_requirements.append(sentence)
+        elif sentence.endswith((". ", ".\n", ".\r", ".\r\n")):
+            detected_requirements.append(sentence)
+
+    return detected_requirements
+
+def detect_requirements_ml(sentences):
+    # ML-based Approach: Naive Bayes Classifier
+    # Prepare the dataset
+    dataset = [
+        ("The system shall provide a user-friendly interface.", 1),
+        ("It should be accessible on various devices.", 1),
+        ("This is not a requirement.", 0),
+        # Add more samples to the dataset...
+    ]
+
+    # Split the dataset into training and testing sets
+    train_sentences, test_sentences, train_labels, test_labels = train_test_split(
+        [sentence for sentence, _ in dataset],
+        [label for _, label in dataset],
+        test_size=0.2,
+        random_state=42
+    )
+
+    # Create a Naive Bayes Classifier pipeline
+    classifier = make_pipeline(TfidfVectorizer(), MultinomialNB())
+
+    # Train the classifier
+    classifier.fit(train_sentences, train_labels)
+
+    # Detect requirements using the trained classifier
+    detected_requirements = []
+    for sentence in sentences:
+        prediction = classifier.predict([sentence])
+        if prediction[0] == 1:
+            detected_requirements.append(sentence)
+
+    return detected_requirements
+
 
 # Load the SpaCy English model for tokenization and entity recognition
 nlp = spacy.load("en_core_web_sm")
@@ -100,3 +171,19 @@ if __name__ == "__main__":
     preprocessed_sentences = preprocess_srs_text(file_path)
     for sentence in preprocessed_sentences:
         print(sentence)
+# Example usage
+
+    text = """
+    The system shall provide a user-friendly interface.
+    It should be accessible on various devices, including desktops, laptops, and mobile phones.
+    The interface shall be responsive and adapt to different screen sizes.
+    """
+    detected_requirements_heuristics, detected_requirements_ml = preprocess_srs_text(text)
+
+    print("Heuristics-based Detected Requirements:")
+    for requirement in detected_requirements_heuristics:
+        print(requirement)
+
+    print("\nML-based Detected Requirements:")
+    for requirement in detected_requirements_ml:
+        print(requirement)
