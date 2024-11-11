@@ -9,6 +9,23 @@ from sklearn.metrics import accuracy_score, classification_report, confusion_mat
 from sklearn.ensemble import RandomForestClassifier
 import pandas as pd
 import re
+from srs_preprocessor import preprocess_srs_text
+
+def identify_potential_requirements(text):
+    # Preprocess the SRS text
+    detected_requirements_heuristics, _ = preprocess_srs_text(text)
+
+    # Identify potential requirements from the detected requirements
+    potential_requirements = []
+    for requirement in detected_requirements_heuristics:
+        # Tokenize the requirement into words
+        words = word_tokenize(requirement)
+
+        # Check if the requirement contains keywords indicative of a requirement
+        if any(word.lower() in ["shall", "should", "must"] for word in words):
+            potential_requirements.append(requirement)
+
+    return potential_requirements
 
 # Load the preprocessed SRS sentences
 def load_preprocessed_srs_sentences(file_path):
