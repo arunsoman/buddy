@@ -7,6 +7,20 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 import pandas as pd
 import re
+# ambiguity_resolver.py (updated)
+
+from srs_preprocessor import preprocess_srs_text
+
+def resolve_ambiguities(text):
+    # Preprocess the SRS text
+    _, detected_requirements_ml = preprocess_srs_text(text)
+
+    # Resolve ambiguities in the detected requirements
+    resolved_requirements = []
+    for requirement in detected_requirements_ml:
+        # Tokenize the requirement into words
+        words = word_tokenize(requirement)
+
 
 # Load the classified requirements
 def load_classified_requirements(file_path):
