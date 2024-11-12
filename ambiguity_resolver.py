@@ -12,6 +12,30 @@ from srs_preprocessor import preprocess_srs_text
 
 import neo4j
 from neo4j import GraphDatabase
+import neo4j
+
+# ...
+
+def detect_ambiguities(requirements):
+    # ...
+    driver = neo4j.GraphDatabase.driver("bolt://localhost:7687", auth=("neo4j", "password"))
+
+    with driver.session() as session:
+        for requirement in requirements:
+            # Utilize Neo4j's graph algorithms to detect ambiguities
+            results = session.run("""
+                MATCH (r:Requirement {id: $requirement_id})-[:CONTAINS|IMPLIED_BY]-(related_r:Requirement)
+                RETURN related_r.id, related_r.text
+            """, requirement_id=requirement_id)
+
+            for result in results:
+                # Analyze the relationships to detect ambiguities
+                ambiguous_requirement_id = result["related_r.id"]
+                ambiguous_requirement_text = result["related_r.text"]
+
+                # ...
+
+    driver.close()
 
 # Establish a Neo4j connection
 def connect_to_neo4j(uri, user, password):
