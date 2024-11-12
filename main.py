@@ -13,6 +13,38 @@ from srs_preprocessor import preprocess_srs_text
 from requirement_identifier import identify_potential_requirements
 from requirement_classifier import classify_requirement
 from db_connector import create_connection, create_requirements_table, insert_requirement
+from text_preprocessor import preprocess_text
+from entity_recognizer import recognize_entities
+from relationship_extractor import extract_relationships
+from contextual_understander import generate_contextual_embeddings
+from knowledge_graph_constructor import construct_knowledge_graph
+
+def main():
+    # Input text
+    text = "Your input text here..."
+    
+    # Text preprocessing
+    preprocessed_text = preprocess_text(text)
+    print("Preprocessed Text:", preprocessed_text)
+    
+    # Entity recognition
+    entities = recognize_entities(preprocessed_text)
+    print("Entities:", entities)
+    
+    # Relationship extraction
+    relationships = extract_relationships(preprocessed_text)
+    print("Relationships:", relationships)
+    
+    # Contextual understanding
+    contextual_embeddings = generate_contextual_embeddings(preprocessed_text)
+    print("Contextual Embeddings:", contextual_embeddings)
+    
+    # Knowledge graph construction
+    knowledge_graph = construct_knowledge_graph(entities, relationships)
+    print("Knowledge Graph:", knowledge_graph)
+
+if __name__ == "__main__":
+    main()
 
 def main():
     # Create a connection to the database
