@@ -20,6 +20,23 @@ from sklearn.metrics import accuracy_score, classification_report, confusion_mat
 from sklearn.ensemble import RandomForestClassifier
 import pandas as pd
 import re
+import neo4j
+
+
+
+def classify_requirements(requirements):
+    # ...
+    driver = neo4j.GraphDatabase.driver("bolt://localhost:7687", auth=("neo4j", "password"))
+
+    with driver.session() as session:
+        for requirement in requirements:
+            # Store classification as a property of the requirement node
+            session.run("""
+                MATCH (r:Requirement {id: $requirement_id})
+                SET r.classification = $classification
+            """, requirement_id=requirement_id, classification=classification)
+
+    driver.close()
 
 # Load the dataset for training the classifier
 def load_dataset(file_path):
