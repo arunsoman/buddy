@@ -1,5 +1,33 @@
 import neo4j
 from neo4j import GraphDatabase
+import neo4j
+
+
+def populate_neo4j_graph(requirements, classifications, ambiguities):
+    driver = neo4j.GraphDatabase.driver("bolt://localhost:7687", auth=("neo4j", "password"))
+
+    with driver.session() as session:
+        # Populate the Neo4j graph with extracted requirements
+        for requirement in requirements:
+            session.run("""
+                CREATE (r:Requirement {id: $requirement_id, text: $requirement_text})
+            """, requirement_id=requirement_id, requirement_text=requirement_text)
+
+        # Populate the Neo4j graph with classifications
+        for classification in classifications:
+            session.run("""
+                MATCH (r:Requirement {id: $requirement_id})
+                SET r.classification = $classification
+            """, requirement_id=requirement_id, classification=classification)
+
+        # Populate the Neo4j graph with ambiguity detections
+        for ambiguity in ambiguities:
+            session.run("""
+                MATCH (r:Requirement {id: $requirement_id})
+                SET r.ambiguity = $ambiguity
+            """, requirement_id=requirement_id, ambiguity=ambiguity)
+
+    driver.close()
 
 # Establish a Neo4j connection
 def connect_to_neo4j(uri, user, password):
