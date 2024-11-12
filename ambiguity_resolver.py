@@ -7,9 +7,57 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 import pandas as pd
 import re
-# ambiguity_resolver.py (updated)
-
 from srs_preprocessor import preprocess_srs_text
+
+
+import neo4j
+from neo4j import GraphDatabase
+
+# Establish a Neo4j connection
+def connect_to_neo4j(uri, user, password):
+    driver = GraphDatabase.driver(uri, auth=(user, password))
+    return driver
+
+# Retrieve ambiguous requirements from the Neo4j database
+def retrieve_ambiguous_requirements(driver):
+    with driver.session() as session:
+        results = session.run("""
+            MATCH (r:Requirement)-[:HAS_AMBIGUITY]->(a:Ambiguity)
+            RETURN r.id, r.description, a.description
+        """)
+        ambiguous_requirements = []
+        for result in results:
+            ambiguous_requirements.append({
+                'requirement_id': result['r.id'],
+                'requirement_description': result['r.description'],
+                'ambiguity_description': result['a.description']
+            })
+        return ambiguous_requirements
+
+# Resolve ambiguities using the Neo4j database
+def resolve_ambiguities(driver, ambiguous_requirements):
+    with driver.session() as session:
+        for requirement in ambiguous_requirements:
+            # Analyze relationships to resolve the ambiguity
+            results = session.run("""
+                MATCH (r:Requirement {id: $requirement_id})-[:CONTAINS|IMPLIED_BY|CONFLICTS_WITH]-(related_r:Requirement)
+                RETURN related_r.id, related_r.description
+            """, requirement_id=requirement['requirement_id'])
+            related_requirements = []
+            for result in results:
+                related_requirements.append({
+                    'related_requirement_id': result['related_r.id'],
+                    'related_requirement_description': result['related_r.description']
+                })
+
+            # Resolve the ambiguity based on the analysis
+            resolved_ambiguity = resolve_ambiguity(requirement, related_requirements)
+
+            # Update the Neo4j database with the resolved ambiguity
+            session.run("""
+                MATCH (r:Requirement {id: $requirement_id})
+                SET r.ambiguity_resolution = $resolved_ambiguity
+            """, requirement_id=requirement['requirement_id'], resolved_ambiguity=resolved_ambiguity)
 
 def resolve_ambiguities(text):
     # Preprocess the SRS text
@@ -141,4 +189,22 @@ if __name__ == "__main__":
     print("\nAmbiguous Requirements:")
     for requirement, classification, similarity in ambiguous_requirements:
        print(f"{requirement} - {classification} - Similarity: {similarity}")
+# Example usage
+if __name__ == "__main__":
+    uri = "bolt://localhost:7687"
+    user = "neo4j"
+    password = "password"
+
+    driver = connect_to_neo4j(uri, user, password)
+
+    ambiguous_requirements = retrieve_ambiguous_requirements(driver)
+    print("Ambiguous Requirements:")
+    for requirement in ambiguous_requirements:
+        print(requirement)
+
+    resolve_ambiguities(driver, ambiguous_requirements)
+
+    driver.close()
+
+
        
